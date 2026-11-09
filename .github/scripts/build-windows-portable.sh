@@ -117,7 +117,8 @@ build_dvdstyler() {
   cd "$SRC_DIR"
   ./autogen.sh
   ./configure --prefix="$STAGE" --with-wx-config=wx-config
-  make -j"$JOBS"
+  # -k: report every compile error in one run
+  make -k -j"$JOBS"
   rm -rf "$STAGE"
   make install
 }

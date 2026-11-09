@@ -12,8 +12,13 @@
 #include "utils.h"
 #include <wx/fontdlg.h>
 #include <wx/colordlg.h>
-#ifdef __WXMSW__
+// Upstream's Windows build used the generic colour dialog (for alpha); wx
+// builds that do not ship it (e.g. MSYS2) use the native one instead.
+#if defined(__WXMSW__) && defined(__has_include)
+#if __has_include(<wx/generic/colrdlgg.h>)
+#define USE_GENERIC_COLOURDLG
 #include <wx/generic/colrdlgg.h>
+#endif
 #endif
 #include <wx/filedlg.h>
 #include <wx/dirdlg.h>
@@ -768,7 +773,7 @@ void wxPropDlg::OnSelectColour(wxCommandEvent& event) {
 #if wxCHECK_VERSION(3,1,0)
 	m_colourData.SetChooseAlpha(true);
 #endif
-#ifdef __WXMSW__
+#ifdef USE_GENERIC_COLOURDLG
 	wxGenericColourDialog dialog(propWindow, &m_colourData);
 #else
 	wxColourDialog dialog(propWindow, &m_colourData);

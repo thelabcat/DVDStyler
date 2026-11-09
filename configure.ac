@@ -134,7 +134,15 @@ PKG_CHECK_MODULES(LIBUDEV, libudev, [CXXFLAGS="$CXXFLAGS $LIBUDEV_CFLAGS -DHAVE_
 PKG_CHECK_MODULES(LIBDBUS, dbus-1, [CXXFLAGS="$CXXFLAGS $LIBDBUS_CFLAGS -DHAVE_LIBDBUS";LIBS="$LIBS $LIBDBUS_LIBS"],
   AC_MSG_WARN([libdbus is missing - the option to turn off computer will not be available]))
 
-CXXFLAGS="$CXXFLAGS -DDATADIR=\\\"$datadir/$PACKAGE\\\""
+case "${host_os}" in
+	mingw*|cygwin*)
+		dnl DATADIR is a type in the Windows headers (objidl.h); data files are
+		dnl found relative to the executable there anyway.
+		;;
+	*)
+		CXXFLAGS="$CXXFLAGS -DDATADIR=\\\"$datadir/$PACKAGE\\\""
+		;;
+esac
 
 dnl vars
 AC_SUBST(LDFLAGS)
