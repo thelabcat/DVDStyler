@@ -252,7 +252,7 @@ wxString GetProductId(HANDLE hDevice) {
 
 wxString GetProductId(const wxString& drive) {
 	TCHAR volPath[MAX_PATH];
-	if (GetVolumePathName(drive, volPath, sizeof(volPath))) {
+	if (GetVolumePathName(drive.wc_str(), volPath, sizeof(volPath))) {
 		for (size_t cchVolPath = _tcslen(volPath);
 				cchVolPath > 0 && volPath[cchVolPath - 1] == TEXT('\\');
 				cchVolPath--) {
@@ -277,7 +277,7 @@ void EnumDevices(wxArrayString& devices, wxComboBox* deviceChoice) {
 	wxString drive = wxT("C:");
 	for (char c = 'C'; c <= 'Z';  c++) {
 		drive[0] = wxChar(c);
-		if (GetDriveType(drive) == DRIVE_CDROM) {
+		if (GetDriveType(drive.wc_str()) == DRIVE_CDROM) {
 			devices.Add(drive);
 			deviceChoice->Append(drive + wxT(" ") + GetProductId(drive));
 		}

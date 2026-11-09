@@ -138,6 +138,10 @@ case "${host_os}" in
 	mingw*|cygwin*)
 		dnl DATADIR is a type in the Windows headers (objidl.h); data files are
 		dnl found relative to the executable there anyway.
+		dnl Include <windows.h> (via wx) before anything else, so its macros
+		dnl (DeleteFile etc.) apply to every header alike, and its "byte"
+		dnl typedef is declared before any "using namespace std".
+		CXXFLAGS="$CXXFLAGS -include wx/msw/wrapwin.h"
 		;;
 	*)
 		CXXFLAGS="$CXXFLAGS -DDATADIR=\\\"$datadir/$PACKAGE\\\""
