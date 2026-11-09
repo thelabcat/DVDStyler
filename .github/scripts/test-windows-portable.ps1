@@ -15,6 +15,10 @@ Expand-Archive -Path $Zip -DestinationPath "$WorkDir\app"
 $app = (Get-ChildItem -Directory "$WorkDir\app" | Select-Object -First 1).FullName
 $bin = Join-Path $app 'bin'
 Write-Host "Portable folder: $app"
+# Test-only setting: clear the transcoding cache at exit without the
+# "Do you want to clear the cache?" prompt, which would block a headless run.
+Add-Content -Path (Join-Path $app 'DVDStyler.ini') -Value 'CacheClearPrompt=1'
+Get-Content (Join-Path $app 'DVDStyler.ini')
 
 # Clean PATH: the portable folder and Windows only. No MSYS2, Git, etc.
 $env:PATH = "$bin;$env:SystemRoot\System32;$env:SystemRoot;$env:SystemRoot\System32\Wbem;$env:SystemRoot\System32\WindowsPowerShell\v1.0"
