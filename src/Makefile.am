@@ -16,6 +16,9 @@ if OSX
 dvdstyler_SOURCES += BurnDlgOSX.mm
 endif
 
+# -iquote, not -I: on case-insensitive file systems (Windows) -I. would make
+# system headers' #include <process.h> pick up our Process.h.
+DEFAULT_INCLUDES = -iquote . -iquote $(srcdir)
 AM_CXXFLAGS = @CXXFLAGS@ -I..
 if WINDOWS
 # Windows resources (icon, cursors, version info, wx manifest), compiled with
