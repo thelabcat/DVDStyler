@@ -324,6 +324,7 @@ wxSizer* wxPropDlg::AddSpinProp(wxSizer* sizer, const wxString& label, int value
 	wxSpinCtrl* ctrl = new wxSpinCtrl(propWindow, -1, wxEmptyString, wxDefaultPosition, size,
 			wxSP_ARROW_KEYS, min, max);
 	ctrl->SetValue(value);
+	wxFitCompactSpinCtrl(ctrl, width, wxString::Format(wxT("%d"), min), wxString::Format(wxT("%d"), max));
 	wxBoxSizer* pane = NULL;
 	if (width > 0) {
 		pane = new wxBoxSizer(wxHORIZONTAL);
@@ -364,6 +365,7 @@ wxSizer* wxPropDlg::AddSpinDoubleProp(wxSizer* sizer, const wxString& label, dou
 	wxSpinCtrlDouble* ctrl = new wxSpinCtrlDouble(propWindow, -1, wxEmptyString, wxDefaultPosition, size,
 			wxSP_ARROW_KEYS, min, max);
 	ctrl->SetValue(value);
+	wxFitCompactSpinCtrl(ctrl, width, wxString::Format(wxT("%g"), min), wxString::Format(wxT("%g"), max));
 #else
 	wxTextCtrl* ctrl = new wxTextCtrl(propWindow, -1, wxString::Format(wxT("%g"), value), wxDefaultPosition, size);
 #endif
@@ -698,9 +700,9 @@ void wxPropDlg::AddFontProp(wxSizer* sizer, const wxString& label,
 	}
 	if (label.length())
 		sizer->Add(new wxStaticText(propWindow, -1, label), 0, wxALIGN_CENTER_VERTICAL);
-	wxButton* button = new wxButton(propWindow, SELECT_FONT_BT_ID, caption);
+	wxButton* button = new wxButton(propWindow, SELECT_FONT_BT_ID, caption, wxDefaultPosition, wxDefaultSize, wxGetCompactButtonStyle(caption));
 	if (caption == _T("..."))
-		button->SetSizeHints(24, 24, 24, 24);
+		wxSetCompactButtonSize(button, 24);
 	button->SetName(wxString::Format(_T("%d"), (int) m_controls.GetCount()));
 	sizer->Add(button);
 	m_types.Add(propFONT);
@@ -735,9 +737,9 @@ void wxPropDlg::AddColourProp(wxSizer* sizer, const wxString& label, wxColour co
 	panel->SetMinSize(wxSize(20, 20));
 	panel->SetColour(colour);
 	sizer2->Add(panel, 1, wxALL, 2);
-	wxButton* button = new wxButton(propWindow, SELECT_COLOR_BT_ID, caption);
+	wxButton* button = new wxButton(propWindow, SELECT_COLOR_BT_ID, caption, wxDefaultPosition, wxDefaultSize, wxGetCompactButtonStyle(caption));
 	if (caption == _T("..."))
-		button->SetSizeHints(24, 24, 24, 24);
+		wxSetCompactButtonSize(button, 24);
 	button->SetName(wxString::Format(wxT("PropColourBt%d"), (int) m_controls.GetCount()));
 	sizer2->Add(button);
 	m_types.Add(propCOLOUR);
@@ -748,6 +750,7 @@ void wxPropDlg::AddColourProp(wxSizer* sizer, const wxString& label, wxColour co
 		wxSpinCtrl* ctrl = new wxSpinCtrl(propWindow, -1, wxEmptyString, wxDefaultPosition, wxSize(54, -1),
 				wxSP_ARROW_KEYS, 0, 100);
 		ctrl->SetValue(opacity);
+		wxFitCompactSpinCtrl(ctrl, 54, wxT("0"), wxT("100"));
 		sizer2->Add(ctrl, 0, wxALL, 2);
 		AddText(sizer2, wxT("%"));
 		m_types.Add(propSPIN);
@@ -791,10 +794,10 @@ wxSizer* wxPropDlg::AddFileProp(wxSizer* sizer, const wxString& label, const wxS
 	wxBoxSizer* sizer2 = new wxBoxSizer(wxHORIZONTAL);
 	wxTextCtrl* ctrl = new wxTextCtrl(propWindow, id, value);
 	sizer2->Add(ctrl, 1, wxEXPAND);
-	wxButton* button = new wxButton(propWindow, SELECT_FILE_BT_ID, buttonLabel);
+	wxButton* button = new wxButton(propWindow, SELECT_FILE_BT_ID, buttonLabel, wxDefaultPosition, wxDefaultSize, wxGetCompactButtonStyle(buttonLabel));
 	int h = ctrl->GetSize().GetHeight() > 24 ? ctrl->GetSize().GetHeight() : 24;
 	if (buttonLabel == _T("..."))
-		button->SetSizeHints(h, h, h, h);
+		wxSetCompactButtonSize(button, h);
 	button->SetName(wxString::Format(_T("SelectFileButton_%d"), (int) m_controls.GetCount()));
 	button->SetClientData(new wxStringClientData(wxString::Format(_T("%d:%s"), dlgStyle, wildcard.c_str())));
 	sizer2->Add(button);
@@ -841,10 +844,10 @@ wxSizer* wxPropDlg::AddDirectoryProp(wxSizer* sizer, const wxString& label, cons
 	wxBoxSizer* sizer2 = new wxBoxSizer(wxHORIZONTAL);
 	wxTextCtrl* ctrl = new wxTextCtrl(propWindow, -1, value);
 	sizer2->Add(ctrl, 1, wxEXPAND, 0);
-	wxButton* button = new wxButton(propWindow, SELECT_DIR_BT_ID, buttonLabel);
+	wxButton* button = new wxButton(propWindow, SELECT_DIR_BT_ID, buttonLabel, wxDefaultPosition, wxDefaultSize, wxGetCompactButtonStyle(buttonLabel));
 	int h = ctrl->GetSize().GetHeight() > 24 ? ctrl->GetSize().GetHeight() : 24;
 	if (buttonLabel == _T("..."))
-		button->SetSizeHints(h, h, h, h);
+		wxSetCompactButtonSize(button, h);
 	button->SetName(wxString::Format(wxT("SelectDirButton_%d"), (int) m_controls.GetCount()));
 	sizer2->Add(button);
 	sizer->Add(sizer2, 1, wxEXPAND);
@@ -870,10 +873,10 @@ void wxPropDlg::AddButton(wxSizer* sizer, const wxString& label, const long id, 
 	// add text control
 	if (label.length())
 		sizer->Add(new wxStaticText(propWindow, -1, label), 0, wxALIGN_CENTER_VERTICAL);
-	wxButton* bt = new wxButton(propWindow, id, buttonLabel);
+	wxButton* bt = new wxButton(propWindow, id, buttonLabel, wxDefaultPosition, wxDefaultSize, wxGetCompactButtonStyle(buttonLabel));
 	if (buttonLabel == wxT("...")) {
 		int h = bt->GetSize().GetHeight() > 24 ? bt->GetSize().GetHeight() : 24;
-		bt->SetSizeHints(h, h, h, h);
+		wxSetCompactButtonSize(bt, h);
 	}
 	sizer->Add(bt);
 }
