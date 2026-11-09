@@ -117,6 +117,9 @@ build_dvdstyler() {
   cd "$SRC_DIR"
   ./autogen.sh
   ./configure --prefix="$STAGE" --with-wx-config=wx-config
+  # Help zips serially: parallel zip runs in docs/ clobber each other's
+  # temp files on Windows.
+  make -C docs -j1
   # -k: report every compile error in one run
   make -k -j"$JOBS"
   rm -rf "$STAGE"

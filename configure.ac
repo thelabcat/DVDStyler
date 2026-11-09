@@ -142,6 +142,8 @@ case "${host_os}" in
 		dnl (DeleteFile etc.) apply to every header alike, and its "byte"
 		dnl typedef is declared before any "using namespace std".
 		CXXFLAGS="$CXXFLAGS -include wx/msw/wrapwin.h"
+		dnl COM (taskbar progress) and SetupAPI (drive list) libraries
+		LIBS="$LIBS -lole32 -luuid -lsetupapi"
 		;;
 	*)
 		CXXFLAGS="$CXXFLAGS -DDATADIR=\\\"$datadir/$PACKAGE\\\""
