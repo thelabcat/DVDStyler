@@ -29,10 +29,10 @@ index 305fc1d..25d69e0 100644
      default_charset = default_charset_buf;
      // fprintf(stderr, "INFO: default codeset is \"%s\"\n", default_charset); /* debug */
 diff --git a/src/compat.h b/src/compat.h
-index 82117dd..c449bc7 100644
+index 82117dd..22ee46f 100644
 --- a/src/compat.h
 +++ b/src/compat.h
-@@ -183,6 +183,15 @@ char * locale_decode
+@@ -183,6 +183,23 @@ char * locale_decode
    /* allocates and returns a string containing the UTF-8 representation of
      localestr interpreted according to the user's locale settings. */
  
@@ -43,54 +43,56 @@ index 82117dd..c449bc7 100644
 +/* nor fsync(); _commit() flushes a file descriptor to disk */
 +#include <io.h>
 +#define fsync(fd) _commit(fd)
++/* nor bzero() */
++#define bzero(p, n) memset((p), 0, (n))
++/* byte order helpers without pulling in winsock (Windows is little-endian) */
++#include <stdlib.h>
++#define htonl(x) _byteswap_ulong(x)
++#define ntohl(x) _byteswap_ulong(x)
++#define htons(x) _byteswap_ushort(x)
++#define ntohs(x) _byteswap_ushort(x)
 +#endif
 +
  #if !HAVE_DECL_O_BINARY
  #define O_BINARY 0
  #endif
 diff --git a/src/spuunmux.c b/src/spuunmux.c
-index 7a7059b..9093cc2 100644
+index 7a7059b..1857a6a 100644
 --- a/src/spuunmux.c
 +++ b/src/spuunmux.c
-@@ -36,7 +36,11 @@
+@@ -36,7 +36,9 @@
  #include <fcntl.h>
  #include <errno.h>
  
-+#ifdef _WIN32
-+#include <winsock2.h> /* htonl() etc.; link with -lws2_32 */
-+#else
++#ifndef _WIN32 /* compat.h has htonl() etc. for Windows */
  #include <netinet/in.h>
 +#endif
  
  #include <png.h>
  #include <zlib.h>
 diff --git a/src/subfont.c b/src/subfont.c
-index d48b087..07fbdb4 100644
+index d48b087..facd442 100644
 --- a/src/subfont.c
 +++ b/src/subfont.c
-@@ -44,7 +44,11 @@
+@@ -44,7 +44,9 @@
  
  #include <math.h>
  
-+#ifdef _WIN32
-+#include <winsock2.h> /* htonl() etc.; link with -lws2_32 */
-+#else
++#ifndef _WIN32 /* compat.h has htonl() etc. for Windows */
  #include <netinet/in.h>
 +#endif
  
  #include "subglobals.h"
  #include "subfont.h"
 diff --git a/src/subgen.c b/src/subgen.c
-index 170f15f..286bf96 100644
+index 170f15f..b98acda 100644
 --- a/src/subgen.c
 +++ b/src/subgen.c
-@@ -33,7 +33,11 @@
+@@ -33,7 +33,9 @@
  #include <errno.h>
  #include <fcntl.h>
  
-+#ifdef _WIN32
-+#include <winsock2.h> /* htonl() etc.; link with -lws2_32 */
-+#else
++#ifndef _WIN32 /* compat.h has htonl() etc. for Windows */
  #include <netinet/in.h>
 +#endif
  
