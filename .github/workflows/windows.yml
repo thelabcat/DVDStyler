@@ -36,7 +36,7 @@ jobs:
           update: true
           install: >-
             git make autoconf automake libtool bison flex patch zip unzip
-            xmlto docbook-xsl gettext
+            xmlto docbook-xsl gettext gettext-devel
           pacboy: >-
             toolchain:p pkgconf:p
             wxwidgets3.2-msw:p wxsvg-wx3.2:p ffmpeg:p libexif:p fontconfig:p

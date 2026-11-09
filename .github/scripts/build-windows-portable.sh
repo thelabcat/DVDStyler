@@ -63,6 +63,9 @@ build_deps() {
     cd "$WORK/dvdauthor"
     git checkout -q "$DVDAUTHOR_COMMIT"
     patch -p1 < "$SRC_DIR/.github/patches/dvdauthor-mingw.patch"
+    # Same as dvdauthor's ./bootstrap: autoreconf needs gettext's config.rpath.
+    mkdir -p autotools m4
+    cp "$(ls /usr/share/gettext*/config.rpath /ucrt64/share/gettext*/config.rpath 2>/dev/null | head -1)" autotools/
     autoreconf -fi
     ./configure --prefix="$DEPS_PREFIX" --disable-dvdunauthor
     make -j"$JOBS"
