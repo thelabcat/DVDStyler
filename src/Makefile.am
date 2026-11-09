@@ -17,7 +17,18 @@ dvdstyler_SOURCES += BurnDlgOSX.mm
 endif
 
 AM_CXXFLAGS = @CXXFLAGS@ -I..
-LDADD = ../wxVillaLib/libwxvilla.a -ljpeg
+if WINDOWS
+# Windows resources (icon, cursors, version info, wx manifest), compiled with
+# the windres command line from `wx-config --rescomp`. The .rc file uses paths
+# relative to the top source dir.
+WIN_RES = dvdstyler_res.o
+endif
+LDADD = ../wxVillaLib/libwxvilla.a -ljpeg $(WIN_RES)
+EXTRA_dvdstyler_DEPENDENCIES = $(WIN_RES)
+CLEANFILES = $(WIN_RES)
+
+dvdstyler_res.o: rc/DVDStyler.rc Version.h
+	cd $(top_srcdir) && $(WX_RESCOMP) -I$(abs_top_builddir)/src -i src/rc/DVDStyler.rc -o $(abs_builddir)/dvdstyler_res.o
 
 EXTRA_DIST = dvdvml.l dvdvmy.y
 MAINTAINERCLEANFILES = dvdvml.c dvdvmy.c dvdvmy.h

@@ -215,6 +215,10 @@ case "${host_os}" in
 		;;
 esac
 AM_CONDITIONAL([OSX], [test x$osx = xtrue])
+case "${host_os}" in
+	mingw*|cygwin*) windows=true ;;
+esac
+AM_CONDITIONAL([WINDOWS], [test x$windows = xtrue])
 
 dnl create Makefiles
 AC_CONFIG_FILES([

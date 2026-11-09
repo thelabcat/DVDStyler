@@ -1,0 +1,86 @@
+# Windows x64 portable build (MSYS2 UCRT64), not yet part of release.yml.
+# Runs on "Run workflow" and on pushes to the grok-bot/windows-build branch.
+# Uploads DVDStyler-<version>-win64.zip as an artifact after a headless test
+# that generates a DVD with the unzipped portable folder.
+name: Windows build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [grok-bot/windows-build]
+
+permissions:
+  contents: read
+
+env:
+  # Bump to force a rebuild of the cached dvdauthor/wxSVG/upstream tools.
+  DEPS_CACHE_REV: 1
+
+jobs:
+  windows-portable:
+    name: Portable Windows x64 build (MSYS2 UCRT64)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Don't convert line endings
+        shell: pwsh
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            git make autoconf automake libtool bison flex patch zip unzip
+            xmlto docbook-xsl gettext
+          pacboy: >-
+            toolchain:p pkgconf:p
+            wxwidgets3.2-msw:p wxsvg-wx3.2:p ffmpeg:p libexif:p fontconfig:p
+            libjpeg-turbo:p libpng:p libxml2:p freetype:p fribidi:p libiconv:p
+            libdvdread:p innoextract:p
+
+      - name: Cache dvdauthor, wxSVG and upstream tools
+        uses: actions/cache@v4
+        with:
+          path: C:\dvdstyler-deps
+          key: win-deps-${{ hashFiles('.github/patches/dvdauthor-mingw.patch') }}-rev${{ env.DEPS_CACHE_REV }}
+
+      - name: Build dependencies (dvdauthor, wxSVG if needed)
+        run: .github/scripts/build-windows-portable.sh deps
+
+      - name: Fetch mkisofs/growisofs from upstream 3.2.1
+        run: .github/scripts/build-windows-portable.sh tools
+
+      - name: Build DVDStyler
+        run: .github/scripts/build-windows-portable.sh build
+
+      - name: Assemble portable zip
+        run: OUT_DIR="$PWD/dist" .github/scripts/build-windows-portable.sh package
+
+      - name: Test DVD generation with the portable zip (clean PATH)
+        shell: pwsh
+        run: |
+          $zip = (Get-ChildItem dist\*.zip | Select-Object -First 1).FullName
+          .github\scripts\test-windows-portable.ps1 -Zip $zip
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-test-logs
+          path: |
+            ${{ runner.temp }}\dvds-test\proj\*.txt
+            ${{ runner.temp }}\dvds-test\proj\*.png
+            ${{ runner.temp }}\dvds-test\proj\test.dvds
+            config.log
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: dist/*
+          if-no-files-found: error
