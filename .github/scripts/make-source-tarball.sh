@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Build the DVDStyler source release tarball from the current git checkout.
 #
-# Same steps as build_release.sh (which clones upstream from SourceForge),
-# but uses this checkout's HEAD so a tag on the fork produces a tarball of
-# exactly that tag. `make dist` cannot be used: locale/Makefile.in is
+# Replaces upstream's build_release.sh (which cloned upstream from
+# SourceForge): uses this checkout's HEAD so a tag on the fork produces a
+# tarball of exactly that tag. `make dist` cannot be used: locale/Makefile.in is
 # hand-written and has no distdir target.
 #
 # Needs: git, autoconf, automake, bison, flex, tar, bzip2.

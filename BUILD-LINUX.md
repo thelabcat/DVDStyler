@@ -32,8 +32,11 @@ For a local install, execute the following:
 sudo make install
 ```
 
-To create a deployable artifact, execute the following:
+To create the source release tarball from the current checkout, execute the following:
 
 ```bash
-./build_release.sh
+.github/scripts/make-source-tarball.sh
 ```
+
+The tarball is written to `dist/`. Release downloads are built by GitHub Actions
+(`.github/workflows/release.yml`) when a `v*` tag is pushed.
