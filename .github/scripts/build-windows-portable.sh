@@ -68,9 +68,11 @@ build_deps() {
     cp "$(ls /usr/share/gettext*/config.rpath /ucrt64/share/gettext*/config.rpath 2>/dev/null | head -1)" autotools/
     autoreconf -fi
     ./configure --prefix="$DEPS_PREFIX" --disable-dvdunauthor
-    # Programs only: the man pages need docbook2man, which MSYS2 lacks.
-    make -C src -k -j"$JOBS"
-    make -C src install
+    # Only the two programs DVDStyler runs. The man pages need docbook2man
+    # (not in MSYS2) and mpeg2desc uses select() on pipes, which MinGW lacks.
+    make -C src -j"$JOBS" dvdauthor.exe spumux.exe
+    mkdir -p "$DEPS_PREFIX/bin"
+    cp src/dvdauthor.exe src/spumux.exe "$DEPS_PREFIX/bin/"
     cd "$SRC_DIR"
   fi
   "$DEPS_PREFIX/bin/dvdauthor.exe" -h 2>&1 | head -3 || true
