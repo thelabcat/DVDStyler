@@ -72,7 +72,12 @@ build_deps() {
     # (not in MSYS2) and mpeg2desc uses select() on pipes, which MinGW lacks.
     make -C src -j"$JOBS" dvdauthor.exe spumux.exe
     mkdir -p "$DEPS_PREFIX/bin"
-    cp src/dvdauthor.exe src/spumux.exe "$DEPS_PREFIX/bin/"
+    # src/*.exe can be libtool wrappers; the real programs are in src/.libs.
+    for p in dvdauthor spumux; do
+      if [ -e "src/.libs/$p.exe" ]; then cp "src/.libs/$p.exe" "$DEPS_PREFIX/bin/"
+      else cp "src/$p.exe" "$DEPS_PREFIX/bin/"; fi
+    done
+    objdump -p "$DEPS_PREFIX/bin/spumux.exe" | grep "DLL Name"
     cd "$SRC_DIR"
   fi
   "$DEPS_PREFIX/bin/dvdauthor.exe" -h 2>&1 | head -3 || true

@@ -14,7 +14,7 @@ permissions:
 
 env:
   # Bump to force a rebuild of the cached dvdauthor/wxSVG/upstream tools.
-  DEPS_CACHE_REV: 1
+  DEPS_CACHE_REV: 2
 
 jobs:
   windows-portable:
