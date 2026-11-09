@@ -29,10 +29,10 @@ index 305fc1d..25d69e0 100644
      default_charset = default_charset_buf;
      // fprintf(stderr, "INFO: default codeset is \"%s\"\n", default_charset); /* debug */
 diff --git a/src/compat.h b/src/compat.h
-index 82117dd..eedb7ff 100644
+index 82117dd..c449bc7 100644
 --- a/src/compat.h
 +++ b/src/compat.h
-@@ -183,6 +183,12 @@ char * locale_decode
+@@ -183,6 +183,15 @@ char * locale_decode
    /* allocates and returns a string containing the UTF-8 representation of
      localestr interpreted according to the user's locale settings. */
  
@@ -40,6 +40,9 @@ index 82117dd..eedb7ff 100644
 +/* MinGW's mkdir() takes no mode argument */
 +#include <direct.h>
 +#define mkdir(path, mode) _mkdir(path)
++/* nor fsync(); _commit() flushes a file descriptor to disk */
++#include <io.h>
++#define fsync(fd) _commit(fd)
 +#endif
 +
  #if !HAVE_DECL_O_BINARY
