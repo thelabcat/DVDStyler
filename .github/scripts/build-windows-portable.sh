@@ -67,7 +67,7 @@ build_deps() {
     mkdir -p autotools m4
     cp "$(ls /usr/share/gettext*/config.rpath /ucrt64/share/gettext*/config.rpath 2>/dev/null | head -1)" autotools/
     autoreconf -fi
-    ./configure --prefix="$DEPS_PREFIX" --disable-dvdunauthor
+    ./configure --prefix="$DEPS_PREFIX" --disable-dvdunauthor LIBS=-lws2_32
     # Programs only: the man pages need docbook2man, which MSYS2 lacks.
     make -C src -j"$JOBS"
     make -C src install

@@ -48,3 +48,51 @@ index 82117dd..c449bc7 100644
  #if !HAVE_DECL_O_BINARY
  #define O_BINARY 0
  #endif
+diff --git a/src/spuunmux.c b/src/spuunmux.c
+index 7a7059b..9093cc2 100644
+--- a/src/spuunmux.c
++++ b/src/spuunmux.c
+@@ -36,7 +36,11 @@
+ #include <fcntl.h>
+ #include <errno.h>
+ 
++#ifdef _WIN32
++#include <winsock2.h> /* htonl() etc.; link with -lws2_32 */
++#else
+ #include <netinet/in.h>
++#endif
+ 
+ #include <png.h>
+ #include <zlib.h>
+diff --git a/src/subfont.c b/src/subfont.c
+index d48b087..07fbdb4 100644
+--- a/src/subfont.c
++++ b/src/subfont.c
+@@ -44,7 +44,11 @@
+ 
+ #include <math.h>
+ 
++#ifdef _WIN32
++#include <winsock2.h> /* htonl() etc.; link with -lws2_32 */
++#else
+ #include <netinet/in.h>
++#endif
+ 
+ #include "subglobals.h"
+ #include "subfont.h"
+diff --git a/src/subgen.c b/src/subgen.c
+index 170f15f..286bf96 100644
+--- a/src/subgen.c
++++ b/src/subgen.c
+@@ -33,7 +33,11 @@
+ #include <errno.h>
+ #include <fcntl.h>
+ 
++#ifdef _WIN32
++#include <winsock2.h> /* htonl() etc.; link with -lws2_32 */
++#else
+ #include <netinet/in.h>
++#endif
+ 
+ #include "common.h"
+ #include "conffile.h"
