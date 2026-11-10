@@ -27,6 +27,8 @@ set -euo pipefail
 
 DVDAUTHOR_COMMIT=${DVDAUTHOR_COMMIT:-fe8fe3578f95f34889e7ed17591d02dceb4f42ed}
 WXSVG_VERSION=${WXSVG_VERSION:-1.5.25}
+MJPEGTOOLS_VERSION=2.2.1
+MJPEGTOOLS_SHA256=b180536d7d9960b05e0023a197b00dcb100929a49aab71d19d55f4a1b210f49a
 UPSTREAM_INSTALLER_URL=https://downloads.sourceforge.net/project/dvdstyler/dvdstyler/3.2.1/DVDStyler-3.2.1-win64.exe
 UPSTREAM_INSTALLER_SHA256=99b74055e9b5cceae29b153158563e454905531c966f3cdbe98ea390a6a0e713
 DEPS_PREFIX=${DEPS_PREFIX:-/c/dvdstyler-deps}
@@ -82,6 +84,11 @@ build_deps() {
   fi
   "$DEPS_PREFIX/bin/dvdauthor.exe" -h 2>&1 | head -3 || true
 
+  if [ ! -x "$DEPS_PREFIX/bin/mplex.exe" ]; then
+    build_mplex
+  fi
+  "$DEPS_PREFIX/bin/mplex.exe" --help 2>&1 | head -2 || true
+
   if ! wxsvg_has_ffmpeg; then
     step "MSYS2 wxSVG lacks FFmpeg support; building wxSVG $WXSVG_VERSION"
     cd "$WORK"
@@ -96,6 +103,45 @@ build_deps() {
   else
     echo "wxSVG with FFmpeg support found"
   fi
+}
+
+build_mplex() {
+  # mplex from mjpegtools (no MSYS2 package). Only mplex and the four
+  # utils/ files it uses are compiled, directly with g++, because the full
+  # mjpegtools configure/build does not target MinGW.
+  step "Building mplex from mjpegtools $MJPEGTOOLS_VERSION"
+  cd "$WORK"
+  curl -fsSL --retry 3 -o mjpegtools.tar.gz \
+    "https://downloads.sourceforge.net/project/mjpeg/mjpegtools/$MJPEGTOOLS_VERSION/mjpegtools-$MJPEGTOOLS_VERSION.tar.gz"
+  echo "$MJPEGTOOLS_SHA256  mjpegtools.tar.gz" | sha256sum -c -
+  rm -rf "mjpegtools-$MJPEGTOOLS_VERSION" mplex-build
+  tar -xzf mjpegtools.tar.gz
+  mkdir mplex-build
+  cat > mplex-build/config.h <<CFG
+/* minimal config.h for building mplex alone with MinGW */
+#define VERSION "$MJPEGTOOLS_VERSION"
+#define PACKAGE "mjpegtools"
+#define HAVE_GETOPT_H 1
+#define HAVE_GETOPT_LONG 1
+#define HAVE_LROUND 1
+#define HAVE_STDINT_H 1
+#define HAVE_INTTYPES_H 1
+#define HAVE_SYS_TYPES_H 1
+#define HAVE_UNISTD_H 1
+#define STDC_HEADERS 1
+CFG
+  local M=$WORK/mjpegtools-$MJPEGTOOLS_VERSION f
+  local inc=(-I"$WORK/mplex-build" -I"$M/utils" -I"$M")
+  for f in mjpeg_logging mpegconsts yuv4mpeg_ratio yuv4mpeg; do
+    gcc -O2 "${inc[@]}" -c "$M/utils/$f.c" -o "mplex-build/$f.o"
+  done
+  for f in "$M"/mplex/*.cpp; do
+    g++ -O2 "${inc[@]}" -c "$f" -o "mplex-build/$(basename "$f" .cpp).o"
+  done
+  mkdir -p "$DEPS_PREFIX/bin"
+  g++ -s -o "$DEPS_PREFIX/bin/mplex.exe" mplex-build/*.o
+  cp "$M/COPYING" "$DEPS_PREFIX/mjpegtools-COPYING.txt"
+  cd "$SRC_DIR"
 }
 
 fetch_upstream_tools() {
@@ -143,7 +189,8 @@ assemble() {
   rm -rf "$B" && mkdir -p "$B/bin" "$B/etc"
   cp "$STAGE/bin/dvdstyler.exe" "$B/bin/DVDStyler.exe"
   cp /ucrt64/bin/ffmpeg.exe /ucrt64/bin/ffprobe.exe "$B/bin/"
-  cp "$DEPS_PREFIX/bin/dvdauthor.exe" "$DEPS_PREFIX/bin/spumux.exe" "$B/bin/"
+  cp "$DEPS_PREFIX/bin/dvdauthor.exe" "$DEPS_PREFIX/bin/spumux.exe" "$DEPS_PREFIX/bin/mplex.exe" "$B/bin/"
+  cp "$DEPS_PREFIX/mjpegtools-COPYING.txt" "$B/bin/"
   cp "$DEPS_PREFIX"/upstream-3.2.1/* "$B/bin/"
   # Windows helper files upstream ships next to the exe (ffmpeg-vbr encoder).
   cp "$SRC_DIR"/src/*.bat "$SRC_DIR"/src/ff_vbr.* "$SRC_DIR"/src/*.txt "$B/bin/"
@@ -156,7 +203,7 @@ assemble() {
   printf '[Interface]\r\nLanguageCode=en\r\n' > "$B/DVDStyler.ini"
 
   # Collect the DLLs the executables import, recursively.
-  local queue=("$B"/bin/DVDStyler.exe "$B"/bin/ffmpeg.exe "$B"/bin/ffprobe.exe "$B"/bin/dvdauthor.exe "$B"/bin/spumux.exe)
+  local queue=("$B"/bin/DVDStyler.exe "$B"/bin/ffmpeg.exe "$B"/bin/ffprobe.exe "$B"/bin/dvdauthor.exe "$B"/bin/spumux.exe "$B"/bin/mplex.exe)
   local f dll src
   while [ ${#queue[@]} -gt 0 ]; do
     f=${queue[0]}; queue=("${queue[@]:1}")
@@ -194,6 +241,7 @@ write_readme() {
     echo "External programs in bin\\:"
     echo "  ffmpeg.exe, ffprobe.exe  MSYS2 mingw-w64-ucrt-x86_64-ffmpeg"
     echo "  dvdauthor.exe, spumux.exe  dvdauthor (github.com/ldo/dvdauthor $DVDAUTHOR_COMMIT), built with MSYS2"
+    echo "  mplex.exe  mplex from mjpegtools $MJPEGTOOLS_VERSION (GPL v2, mjpeg.sourceforge.net), built with MSYS2; license in mjpegtools-COPYING.txt"
     echo "  mkisofs.exe, growisofs.exe, dvd+rw-format.exe, dvd+rw-mediainfo.exe, libgcc_s_dw2-1.dll"
     echo "      unchanged 32-bit binaries from the official DVDStyler 3.2.1 win64 installer"
     echo "      (mkisofs 2.01-bootcd.ru from cdrtools, growisofs 7.1 from dvd+rw-tools; GPL)"

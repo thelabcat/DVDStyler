@@ -14,7 +14,7 @@ permissions:
 
 env:
   # Bump to force a rebuild of the cached dvdauthor/wxSVG/upstream tools.
-  DEPS_CACHE_REV: 2
+  DEPS_CACHE_REV: 3
 
 jobs:
   windows-portable:
@@ -73,9 +73,9 @@ jobs:
         with:
           name: windows-test-logs
           path: |
-            ${{ runner.temp }}\dvds-test\proj\*.txt
-            ${{ runner.temp }}\dvds-test\proj\*.png
-            ${{ runner.temp }}\dvds-test\proj\test.dvds
+            ${{ runner.temp }}\dvds-test\*\*.txt
+            ${{ runner.temp }}\dvds-test\*\*.png
+            ${{ runner.temp }}\dvds-test\*\test.dvds
             config.log
           if-no-files-found: ignore
 
