@@ -1,13 +1,18 @@
-# Windows x64 portable build (MSYS2 UCRT64), not yet part of release.yml.
-# Runs on "Run workflow" and on pushes to the grok-bot/windows-build branch.
+# Windows x64 portable build (MSYS2 UCRT64).
+# Runs on pushes to master, pull requests, "Run workflow", and is called by
+# release.yml (workflow_call) to build the zip attached to each release.
 # Uploads DVDStyler-<version>-win64.zip as an artifact after a headless test
 # that generates a DVD with the unzipped portable folder.
 name: Windows build
 
 on:
-  workflow_dispatch:
   push:
-    branches: [grok-bot/windows-build]
+    branches: [master]
+    paths-ignore: ['**.md', 'docs/**', 'locale/**']
+  pull_request:
+    paths-ignore: ['**.md', 'docs/**', 'locale/**']
+  workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read

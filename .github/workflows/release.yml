@@ -1,7 +1,8 @@
 # Release build: runs when a version tag (v*) is pushed, e.g.
 #   git tag -a v3.3b4-wj2 -m "DVDStyler 3.3b4-wj2" && git push origin v3.3b4-wj2
-# Builds the source tarball and a self-contained Linux x86_64 tarball, then
-# creates a GitHub Release for the tag with both attached.
+# Builds the source tarball, a self-contained Linux x86_64 tarball and a
+# portable Windows x64 zip (windows.yml), then creates a GitHub Release for
+# the tag with all three attached.
 # "Run workflow" (workflow_dispatch) builds the same files as workflow
 # artifacts without creating a release, for testing.
 name: Release
@@ -91,10 +92,15 @@ jobs:
           path: dist/*
           if-no-files-found: error
 
+  windows-portable:
+    name: Windows
+    # Zip is named from configure.ac; the source job checks that against the tag.
+    uses: ./.github/workflows/windows.yml
+
   release:
     name: Create GitHub Release
     if: github.event_name == 'push' && github.ref_type == 'tag'
-    needs: [source, linux-bundle]
+    needs: [source, linux-bundle, windows-portable]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -102,6 +108,8 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: dist
+          # Skip windows-test-logs; each artifact holds the file plus its .sha256.
+          pattern: '{source,linux-x86_64,windows-x64}'
           merge-multiple: true
 
       - name: Create release
@@ -111,6 +119,9 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           ls -l dist
+          for f in DVDStyler-*.tar.bz2 DVDStyler-*-linux-x86_64.tar.xz DVDStyler-*-win64.zip; do
+            ls dist/$f >/dev/null || { echo "::error::missing release file $f"; exit 1; }
+          done
           # Alpha/beta/rc versions (e.g. 3.3b4-wj2) are marked as pre-releases.
           pre=""
           if printf '%s' "${TAG#v}" | grep -Eq '[0-9](a|b|rc)[0-9]'; then pre="--prerelease"; fi
@@ -120,6 +131,9 @@ jobs:
           - `DVDStyler-*-linux-x86_64.tar.xz`: self-contained Linux build. Unpack anywhere and run `./dvdstyler`.
             It bundles FFmpeg, wxWidgets, wxSVG and libexif, and needs glibc 2.35 or newer plus GTK3 and GStreamer.
             See `DEPENDENCIES.txt` inside the tarball for the full list of system libraries and packages.
+          - `DVDStyler-*-win64.zip`: portable Windows x64 build (Windows 10 or newer). Unzip anywhere (not under
+            `C:\Program Files`) and run `bin\DVDStyler.exe`. It bundles FFmpeg, dvdauthor/spumux and mplex built with MSYS2;
+            mkisofs and growisofs are the unchanged binaries from the official DVDStyler 3.2.1 installer. See `README-WINDOWS.txt` inside.
           NOTES
           sed -i 's/^          //' notes.md
           gh release create "$TAG" dist/* --verify-tag --title "DVDStyler ${TAG#v}" \
