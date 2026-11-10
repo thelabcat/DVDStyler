@@ -23,6 +23,15 @@ $ini = Join-Path $app 'DVDStyler.ini'
 $shippedIni = Get-Content -Raw $ini
 Write-Host "Portable folder: $app"
 
+# DVDStyler.exe must be a GUI-subsystem program (2), not console (3), or it
+# opens an empty terminal window when started from Explorer.
+$pe = [System.IO.File]::ReadAllBytes("$bin\DVDStyler.exe")
+$peOff = [BitConverter]::ToInt32($pe, 0x3C)
+$subsystem = [BitConverter]::ToUInt16($pe, $peOff + 0x5C)
+Write-Host "DVDStyler.exe PE subsystem: $subsystem (2 = Windows GUI, 3 = console)"
+$subsystemOk = ($subsystem -eq 2)
+if (-not $subsystemOk) { Write-Host "::error::DVDStyler.exe has PE subsystem $subsystem, expected 2 (GUI)" }
+
 # Clean PATH: the portable folder and Windows only. No MSYS2, Git, etc.
 $env:PATH = "$bin;$env:SystemRoot\System32;$env:SystemRoot;$env:SystemRoot\System32\Wbem;$env:SystemRoot\System32\WindowsPowerShell\v1.0"
 Write-Host "PATH=$env:PATH"
@@ -121,6 +130,6 @@ $r2 = Test-Generate 'mplex' "[Generate]`r`nUseMplex=1`r`nUseMplexForMenus=1`r`n"
 # NTSC (3), audio AC3 (3), so the title is re-encoded via ffmpeg-vbr.bat.
 $r3 = Test-Generate 'telecine' '' $false $false 'ntsc' "$media\film24.mp4" $true '<video format="3"/><audio format="3"/>'
 Set-Content -Path $ini -Value $shippedIni -NoNewline
-Write-Host "results: default=$r1 mplex=$r2 telecine=$r3"
-if ($r1 -and $r2 -and $r3) { Write-Host "ALL PASS"; exit 0 }
+Write-Host "results: subsystem=$subsystemOk default=$r1 mplex=$r2 telecine=$r3"
+if ($subsystemOk -and $r1 -and $r2 -and $r3) { Write-Host "ALL PASS"; exit 0 }
 exit 1

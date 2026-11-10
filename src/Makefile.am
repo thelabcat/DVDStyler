@@ -25,6 +25,8 @@ if WINDOWS
 # the windres command line from `wx-config --rescomp`. The .rc file uses paths
 # relative to the top source dir.
 WIN_RES = dvdstyler_res.o
+# GUI subsystem: no console window when DVDStyler.exe is started
+AM_LDFLAGS = -mwindows
 endif
 LDADD = ../wxVillaLib/libwxvilla.a -ljpeg $(WIN_RES)
 EXTRA_dvdstyler_DEPENDENCIES = $(WIN_RES)
