@@ -194,6 +194,8 @@ assemble() {
   cp "$DEPS_PREFIX"/upstream-3.2.1/* "$B/bin/"
   # Windows helper files upstream ships next to the exe (ffmpeg-vbr encoder).
   cp "$SRC_DIR"/src/*.bat "$SRC_DIR"/src/ff_vbr.* "$SRC_DIR"/src/*.txt "$B/bin/"
+  # cmd.exe expects CRLF batch files (GOTO label lookup can misfire on LF-only).
+  sed -i 's/\r*$/\r/' "$B"/bin/*.bat
   cp -r "$SRC_DIR/src/German" "$B/bin/"
   # Data dirs sit next to bin/ (DVDStyler looks in <exe dir>/../<dir>).
   cp -a "$STAGE/share/dvdstyler/." "$B/"

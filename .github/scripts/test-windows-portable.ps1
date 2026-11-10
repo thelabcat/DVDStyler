@@ -4,7 +4,9 @@
 #   1. default settings: still-image menu + 5 s title
 #   2. mplex on ([Generate] UseMplex=1, UseMplexForMenus=1): still-image
 #      menu with background audio + the same title, so mplex has to run
-# Each passes if VIDEO_TS.IFO and a VOB exist (and, for 2, mplex ran OK).
+#   3. NTSC project with a 1280x720 H.264 23.976 fps title, so ffmpeg-vbr.bat
+#      takes its telecine branch; the title VOB must be top field first
+# Each passes if VIDEO_TS.IFO and a VOB exist (plus the per-test checks).
 param(
   [Parameter(Mandatory = $true)] [string] $Zip,
   [string] $WorkDir = "$env:RUNNER_TEMP\dvds-test",
@@ -36,8 +38,11 @@ Run-Ffmpeg @('-f', 'lavfi', '-i', 'testsrc=size=720x576:rate=25', '-frames:v', '
 Run-Ffmpeg @('-f', 'lavfi', '-i', 'testsrc=size=720x576:rate=25', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000',
   '-t', '5', '-target', 'pal-dvd', '-y', "$media\test.mpg")
 Run-Ffmpeg @('-f', 'lavfi', '-i', 'sine=frequency=660:sample_rate=48000', '-t', '3', '-c:a', 'mp2', '-b:a', '192k', '-y', "$media\menu.mp2")
+Run-Ffmpeg @('-f', 'lavfi', '-i', 'testsrc2=size=1280x720:rate=24000/1001', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000',
+  '-t', '4', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-y', "$media\film24.mp4")
 
-function Test-Generate([string] $name, [string] $iniExtra, [bool] $menuAudio, [bool] $expectMplex) {
+function Test-Generate([string] $name, [string] $iniExtra, [bool] $menuAudio, [bool] $expectMplex,
+    [string] $fmt = 'pal', [string] $title = "$media\test.mpg", [bool] $expectTelecine = $false) {
   Write-Host ""
   Write-Host "===== $name ====="
   # Test-only settings on top of the shipped DVDStyler.ini. CacheClearPrompt=1
@@ -49,14 +54,17 @@ function Test-Generate([string] $name, [string] $iniExtra, [bool] $menuAudio, [b
   New-Item -ItemType Directory -Force $t, "$t\out", "$t\tmp" | Out-Null
   $audioXml = ''
   if ($menuAudio) { $audioXml = "<audio>$media\menu.mp2</audio>" }
+  $vf = 2; $h = 576
+  if ($fmt -eq 'ntsc') { $vf = 3; $h = 480 }
+  $FMT = $fmt.ToUpper()
   @"
 <?xml version="1.0" encoding="utf-8"?>
-<dvdstyler format="4" name="TEST" videoFormat="2" audioFormat="3" aspectRatio="1">
-  <vmgm><menus><video format="pal"/><pgc entry="title"><vob pause="inf">$audioXml<menu videoFormat="PAL" aspectRatio="1">
-    <svg width="720" height="576"><rect width="720" height="576" id="backgroundColour" fill="#2040a0"/>
-    <image width="720" height="576" id="background" xlink:href="$media\bg.jpg"/></svg>
+<dvdstyler format="4" name="TEST" videoFormat="$vf" audioFormat="3" aspectRatio="1">
+  <vmgm><menus><video format="$fmt"/><pgc entry="title"><vob pause="inf">$audioXml<menu videoFormat="$FMT" aspectRatio="1">
+    <svg width="720" height="$h"><rect width="720" height="$h" id="backgroundColour" fill="#2040a0"/>
+    <image width="720" height="$h" id="background" xlink:href="$media\bg.jpg"/></svg>
   </menu></vob></pgc></menus></vmgm>
-  <titleset><titles><video format="pal"/><pgc><vob file="$media\test.mpg"/></pgc></titles></titleset>
+  <titleset><titles><video format="$fmt"/><pgc><vob file="$title"/></pgc></titles></titleset>
 </dvdstyler>
 "@ | Set-Content -Encoding utf8 "$t\test.dvds"
 
@@ -92,6 +100,15 @@ function Test-Generate([string] $name, [string] $iniExtra, [bool] $menuAudio, [b
     Write-Host "mplex ran: $ranMplex, mplex failed: $mplexFailed"
     $ok = $ok -and $ranMplex -and -not $mplexFailed
   }
+  if ($expectTelecine) {
+    $ranTelecine = $text -match 'telecine'
+    $fo = ''
+    if (Test-Path "$vts\VTS_01_1.VOB") {
+      $fo = (& "$bin\ffprobe.exe" -v error -select_streams v:0 -show_entries stream=field_order,r_frame_rate -of default=nw=1 "$vts\VTS_01_1.VOB") -join ' '
+    }
+    Write-Host "telecine in command: $ranTelecine; title VOB: $fo"
+    $ok = $ok -and $ranTelecine -and ($fo -match 'field_order=tt')
+  }
   if ($ok) { Write-Host "PASS ($name): VIDEO_TS.IFO and $($vobs.Count) VOB file(s) generated" }
   else { Write-Host "::error::FAIL ($name): finished=$finished VIDEO_TS.IFO=$ifo VOBs=$($vobs.Count)" }
   return $ok
@@ -99,6 +116,8 @@ function Test-Generate([string] $name, [string] $iniExtra, [bool] $menuAudio, [b
 
 $r1 = Test-Generate 'default' '' $false $false
 $r2 = Test-Generate 'mplex' "[Generate]`r`nUseMplex=1`r`nUseMplexForMenus=1`r`n" $true $true
+$r3 = Test-Generate 'telecine' '' $false $false 'ntsc' "$media\film24.mp4" $true
 Set-Content -Path $ini -Value $shippedIni -NoNewline
-if ($r1 -and $r2) { Write-Host "ALL PASS"; exit 0 }
+Write-Host "results: default=$r1 mplex=$r2 telecine=$r3"
+if ($r1 -and $r2 -and $r3) { Write-Host "ALL PASS"; exit 0 }
 exit 1
