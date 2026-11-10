@@ -42,7 +42,8 @@ Run-Ffmpeg @('-f', 'lavfi', '-i', 'testsrc2=size=1280x720:rate=24000/1001', '-f'
   '-t', '4', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-y', "$media\film24.mp4")
 
 function Test-Generate([string] $name, [string] $iniExtra, [bool] $menuAudio, [bool] $expectMplex,
-    [string] $fmt = 'pal', [string] $title = "$media\test.mpg", [bool] $expectTelecine = $false) {
+    [string] $fmt = 'pal', [string] $title = "$media\test.mpg", [bool] $expectTelecine = $false,
+    [string] $titleStreams = '') {
   Write-Host ""
   Write-Host "===== $name ====="
   # Test-only settings on top of the shipped DVDStyler.ini. CacheClearPrompt=1
@@ -64,7 +65,7 @@ function Test-Generate([string] $name, [string] $iniExtra, [bool] $menuAudio, [b
     <svg width="720" height="$h"><rect width="720" height="$h" id="backgroundColour" fill="#2040a0"/>
     <image width="720" height="$h" id="background" xlink:href="$media\bg.jpg"/></svg>
   </menu></vob></pgc></menus></vmgm>
-  <titleset><titles><video format="$fmt"/><pgc><vob file="$title"/></pgc></titles></titleset>
+  <titleset><titles><video format="$fmt"/><pgc><vob file="$title">$titleStreams</vob></pgc></titles></titleset>
 </dvdstyler>
 "@ | Set-Content -Encoding utf8 "$t\test.dvds"
 
@@ -101,7 +102,7 @@ function Test-Generate([string] $name, [string] $iniExtra, [bool] $menuAudio, [b
     $ok = $ok -and $ranMplex -and -not $mplexFailed
   }
   if ($expectTelecine) {
-    $ranTelecine = $text -match 'telecine'
+    $ranTelecine = $text -match 'telecine,setfield=tff'
     $fo = ''
     if (Test-Path "$vts\VTS_01_1.VOB") {
       $fo = (& "$bin\ffprobe.exe" -v error -select_streams v:0 -show_entries stream=field_order,r_frame_rate -of default=nw=1 "$vts\VTS_01_1.VOB") -join ' '
@@ -116,7 +117,9 @@ function Test-Generate([string] $name, [string] $iniExtra, [bool] $menuAudio, [b
 
 $r1 = Test-Generate 'default' '' $false $false
 $r2 = Test-Generate 'mplex' "[Generate]`r`nUseMplex=1`r`nUseMplexForMenus=1`r`n" $true $true
-$r3 = Test-Generate 'telecine' '' $false $false 'ntsc' "$media\film24.mp4" $true
+# Destination formats as the GUI saves them for a non-DVD source: video
+# NTSC (3), audio AC3 (3), so the title is re-encoded via ffmpeg-vbr.bat.
+$r3 = Test-Generate 'telecine' '' $false $false 'ntsc' "$media\film24.mp4" $true '<video format="3"/><audio format="3"/>'
 Set-Content -Path $ini -Value $shippedIni -NoNewline
 Write-Host "results: default=$r1 mplex=$r2 telecine=$r3"
 if ($r1 -and $r2 -and $r3) { Write-Host "ALL PASS"; exit 0 }
